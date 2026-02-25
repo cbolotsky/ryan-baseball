@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(firebase deploy:*)",
+      "Bash(curl:*)",
+      "Bash(gh auth status:*)",
+      "Bash(git -C /Users/corybolotsky/ryan-baseball init:*)",
+      "Bash(git -C /Users/corybolotsky/ryan-baseball add -A)",
+      "Bash(git -C:*)"
+    ]
+  }
+}
