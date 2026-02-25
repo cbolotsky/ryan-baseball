@@ -45,6 +45,8 @@ const COACH_FIELDS = [
     { key: 'bonus_pitchSpeed', label: '+PitchSpd', type: 'number', min: 0, max: 20 },
     { key: 'bonus_pitchControl', label: '+PitchCtl', type: 'number', min: 0, max: 20 },
     { key: 'bonus_pitchBreak', label: '+PitchBrk', type: 'number', min: 0, max: 20 },
+    { key: 'secret', label: 'Secret?', type: 'toggle' },
+    { key: 'unlockCode', label: 'Unlock Code', type: 'text' },
 ];
 
 const EQUIP_FIELDS = [
@@ -478,6 +480,8 @@ export class AdminScene {
                     if (f.key.startsWith('bonus_')) {
                         const stat = f.key.replace('bonus_', '');
                         this.formData[f.key] = (item.bonuses || {})[stat] || 0;
+                    } else if (f.key === 'secret') {
+                        this.formData.secret = !!item.secret;
                     } else {
                         this.formData[f.key] = item[f.key] || (f.type === 'number' ? 0 : '');
                     }
@@ -618,12 +622,23 @@ export class AdminScene {
             skinTone: 'light',
         };
 
+        if (d.secret) {
+            coachData.secret = true;
+            coachData.unlockCode = d.unlockCode || '';
+        }
+
         if (this.subView === 'add') {
             coachData.id = `admin_coach_${Date.now()}`;
             AdminDataManager.addCoach(coachData);
+            if (d.secret) AdminDataManager.setCoachSecret(coachData.id, true, d.unlockCode || '');
             this._showFeedback(`Added Coach ${coachData.name}!`);
         } else {
             AdminDataManager.editCoach(this.editingId, coachData);
+            if (d.secret) {
+                AdminDataManager.setCoachSecret(this.editingId, true, d.unlockCode || '');
+            } else {
+                AdminDataManager.setCoachSecret(this.editingId, false, '');
+            }
             this._showFeedback(`Saved Coach ${coachData.name}!`);
         }
         this.subView = 'list';
@@ -838,6 +853,10 @@ export class AdminScene {
                 ctx.fillStyle = '#44FF44';
                 const bonusStr = Object.entries(item.bonuses || {}).map(([k, v]) => `+${v}${k.substring(0, 3)}`).join(' ');
                 ctx.fillText(bonusStr, LIST_LEFT + 450, cy);
+                if (listW > 600) {
+                    ctx.fillStyle = item.secret ? '#FF4444' : '#333';
+                    ctx.fillText(item.secret ? 'SECRET' : '--', LIST_LEFT + 650, cy);
+                }
             } else {
                 ctx.fillStyle = RARITY_COLORS[item.rarity] || '#AAA';
                 ctx.fillText(item.name || '', LIST_LEFT + 10, cy);

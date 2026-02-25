@@ -10,6 +10,8 @@ import { Coach } from '../entities/Coach.js';
 import { EconomyManager } from '../systems/EconomyManager.js';
 import { Audio } from '../engine/Audio.js';
 import { SeasonManager } from '../systems/SeasonManager.js';
+import { AdminDataManager } from '../systems/AdminDataManager.js';
+import { TextInput } from '../utils/TextInput.js';
 
 const STAR_COLORS = { 5: '#FFD700', 4: '#4488FF', 3: '#44FF44', 2: '#AAAAAA', 1: '#777777' };
 
@@ -24,17 +26,31 @@ export class DraftScene {
         this.pickAnimation = null; // { player, timer }
 
         // Coach selection
-        this.coaches = COACHES;
         this.coachPage = 0;
         this.coachesPerPage = 4;
         this.selectedCoach = null;
+
+        // Secret coach unlock
+        this.unlockedSecrets = new Set(AdminDataManager.getUnlockedSecrets());
+        this.codeInputActive = false;
+        this.unlockFeedback = '';
+        this.unlockFeedbackTimer = 0;
 
         // Draft cards
         this.cardOptions = [];
     }
 
+    _getVisibleCoaches() {
+        return COACHES.filter(c => !c.secret || this.unlockedSecrets.has(c.id));
+    }
+
     onEnter() {
         this.draftManager.initDraftPool();
+    }
+
+    onExit() {
+        TextInput.deactivate();
+        this.codeInputActive = false;
     }
 
     update(dt) {
@@ -56,7 +72,7 @@ export class DraftScene {
         }
 
         if (this.phase === 'coach') {
-            this._updateCoachSelection(mx, my);
+            this._updateCoachSelection(mx, my, dt);
         } else if (this.phase === 'drafting') {
             this._updateDrafting(mx, my);
         } else if (this.phase === 'complete') {
@@ -64,9 +80,12 @@ export class DraftScene {
         }
     }
 
-    _updateCoachSelection(mx, my) {
+    _updateCoachSelection(mx, my, dt) {
+        if (this.unlockFeedbackTimer > 0) this.unlockFeedbackTimer -= dt;
+
+        const coaches = this._getVisibleCoaches();
         const startIdx = this.coachPage * this.coachesPerPage;
-        const visible = this.coaches.slice(startIdx, startIdx + this.coachesPerPage);
+        const visible = coaches.slice(startIdx, startIdx + this.coachesPerPage);
 
         this.hoveredCard = -1;
         for (let i = 0; i < visible.length; i++) {
@@ -82,9 +101,17 @@ export class DraftScene {
         if (this.coachPage > 0 && mx >= 20 && mx <= 60 && my >= 350 && my <= 400) {
             this.hoveredButton = 0; // left arrow
         }
-        if ((this.coachPage + 1) * this.coachesPerPage < this.coaches.length &&
+        if ((this.coachPage + 1) * this.coachesPerPage < coaches.length &&
             mx >= CANVAS_WIDTH - 60 && mx <= CANVAS_WIDTH - 20 && my >= 350 && my <= 400) {
             this.hoveredButton = 1; // right arrow
+        }
+
+        // Unlock code field and button
+        if (UIRenderer.isPointInRect(mx, my, CANVAS_WIDTH / 2 - 160, CANVAS_HEIGHT - 80, 220, 30)) {
+            this.hoveredButton = 10; // code input field
+        }
+        if (UIRenderer.isPointInRect(mx, my, CANVAS_WIDTH / 2 + 70, CANVAS_HEIGHT - 84, 90, 36)) {
+            this.hoveredButton = 11; // UNLOCK button
         }
 
         if (this.game.input.isMouseJustPressed()) {
@@ -99,8 +126,40 @@ export class DraftScene {
             } else if (this.hoveredButton === 1) {
                 Audio.uiClick();
                 this.coachPage++;
+            } else if (this.hoveredButton === 10) {
+                if (!this.codeInputActive) {
+                    const canvas = this.game.canvas || document.getElementById('gameCanvas');
+                    TextInput.activate(canvas, CANVAS_WIDTH / 2 - 160, CANVAS_HEIGHT - 80, 220, 30, '');
+                    this.codeInputActive = true;
+                }
+            } else if (this.hoveredButton === 11) {
+                this._tryCoachUnlock();
+            } else if (this.codeInputActive) {
+                // Clicked elsewhere — keep input active
             }
         }
+
+        // Enter key submits unlock
+        if (this.codeInputActive && this.game.input.isKeyJustPressed && this.game.input.isKeyJustPressed('Enter')) {
+            this._tryCoachUnlock();
+        }
+    }
+
+    _tryCoachUnlock() {
+        const code = TextInput.getValue().trim();
+        const found = AdminDataManager.tryUnlockCode(code);
+        if (found && COACHES.some(c => c.id === found.id)) {
+            this.unlockedSecrets = new Set(AdminDataManager.getUnlockedSecrets());
+            this.unlockFeedback = `Unlocked: ${found.name}!`;
+            this.coachPage = 0;
+        } else if (found) {
+            this.unlockFeedback = 'That code unlocks equipment, not a coach.';
+        } else {
+            this.unlockFeedback = 'Invalid code.';
+        }
+        this.unlockFeedbackTimer = 3;
+        TextInput.deactivate();
+        this.codeInputActive = false;
     }
 
     _updateDrafting(mx, my) {
@@ -233,8 +292,9 @@ export class DraftScene {
             font: '16px monospace', color: '#AAA',
         });
 
+        const coaches = this._getVisibleCoaches();
         const startIdx = this.coachPage * this.coachesPerPage;
-        const visible = this.coaches.slice(startIdx, startIdx + this.coachesPerPage);
+        const visible = coaches.slice(startIdx, startIdx + this.coachesPerPage);
 
         for (let i = 0; i < visible.length; i++) {
             const coach = visible[i];
@@ -249,15 +309,36 @@ export class DraftScene {
         if (this.coachPage > 0) {
             this._drawArrow(ctx, 40, 370, 'left', this.hoveredButton === 0);
         }
-        if ((this.coachPage + 1) * this.coachesPerPage < this.coaches.length) {
+        if ((this.coachPage + 1) * this.coachesPerPage < coaches.length) {
             this._drawArrow(ctx, CANVAS_WIDTH - 40, 370, 'right', this.hoveredButton === 1);
         }
 
         // Page indicator
-        const totalPages = Math.ceil(this.coaches.length / this.coachesPerPage);
-        UIRenderer.drawText(ctx, `${this.coachPage + 1} / ${totalPages}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30, {
+        const totalPages = Math.ceil(coaches.length / this.coachesPerPage);
+        UIRenderer.drawText(ctx, `${this.coachPage + 1} / ${totalPages}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 105, {
             font: '14px monospace', color: '#666',
         });
+
+        // Secret coach unlock section
+        UIRenderer.drawText(ctx, 'HAVE A SECRET CODE?', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 115, {
+            font: '11px monospace', color: '#555',
+        });
+        const codeValue = this.codeInputActive ? TextInput.getValue() : '';
+        TextInput.drawField(ctx, CANVAS_WIDTH / 2 - 160, CANVAS_HEIGHT - 80, 220, 30, '', codeValue, this.codeInputActive, {
+            placeholder: 'Enter secret code...',
+            font: '14px monospace',
+        });
+        UIRenderer.drawButton(ctx, CANVAS_WIDTH / 2 + 70, CANVAS_HEIGHT - 84, 90, 36, 'UNLOCK', this.hoveredButton === 11, {
+            normal: '#1a1a2a', hover: '#2a2a4a', text: '#4488FF', border: '#4488FF',
+        });
+
+        // Unlock feedback
+        if (this.unlockFeedbackTimer > 0) {
+            const isSuccess = this.unlockFeedback.startsWith('Unlocked');
+            UIRenderer.drawText(ctx, this.unlockFeedback, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 38, {
+                font: 'bold 13px monospace', color: isSuccess ? '#44FF44' : '#FF4444',
+            });
+        }
     }
 
     _drawCoachCard(ctx, x, y, w, h, coach, hovered) {
