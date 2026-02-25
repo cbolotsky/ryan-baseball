@@ -107,10 +107,10 @@ export class DraftScene {
         }
 
         // Unlock code field and button
-        if (UIRenderer.isPointInRect(mx, my, CANVAS_WIDTH / 2 - 160, CANVAS_HEIGHT - 80, 220, 30)) {
+        if (UIRenderer.isPointInRect(mx, my, CANVAS_WIDTH / 2 - 150, CANVAS_HEIGHT - 72, 210, 34)) {
             this.hoveredButton = 10; // code input field
         }
-        if (UIRenderer.isPointInRect(mx, my, CANVAS_WIDTH / 2 + 70, CANVAS_HEIGHT - 84, 90, 36)) {
+        if (UIRenderer.isPointInRect(mx, my, CANVAS_WIDTH / 2 + 72, CANVAS_HEIGHT - 76, 90, 38)) {
             this.hoveredButton = 11; // UNLOCK button
         }
 
@@ -129,7 +129,7 @@ export class DraftScene {
             } else if (this.hoveredButton === 10) {
                 if (!this.codeInputActive) {
                     const canvas = this.game.canvas || document.getElementById('gameCanvas');
-                    TextInput.activate(canvas, CANVAS_WIDTH / 2 - 160, CANVAS_HEIGHT - 80, 220, 30, '');
+                    TextInput.activate(canvas, CANVAS_WIDTH / 2 - 150, CANVAS_HEIGHT - 72, 210, 34, '');
                     this.codeInputActive = true;
                 }
             } else if (this.hoveredButton === 11) {
@@ -315,27 +315,39 @@ export class DraftScene {
 
         // Page indicator
         const totalPages = Math.ceil(coaches.length / this.coachesPerPage);
-        UIRenderer.drawText(ctx, `${this.coachPage + 1} / ${totalPages}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 105, {
+        UIRenderer.drawText(ctx, `${this.coachPage + 1} / ${totalPages}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 160, {
             font: '14px monospace', color: '#666',
         });
 
         // Secret coach unlock section
-        UIRenderer.drawText(ctx, 'HAVE A SECRET CODE?', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 115, {
-            font: '11px monospace', color: '#555',
+        const sectionX = CANVAS_WIDTH / 2 - 170;
+        const sectionW = 360;
+        ctx.save();
+        ctx.fillStyle = 'rgba(20,20,40,0.85)';
+        ctx.strokeStyle = '#334';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(sectionX, CANVAS_HEIGHT - 105, sectionW, 90, 6) : ctx.rect(sectionX, CANVAS_HEIGHT - 105, sectionW, 90);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        UIRenderer.drawText(ctx, 'HAVE A SECRET CODE?', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 88, {
+            font: 'bold 13px monospace', color: '#7788AA',
         });
         const codeValue = this.codeInputActive ? TextInput.getValue() : '';
-        TextInput.drawField(ctx, CANVAS_WIDTH / 2 - 160, CANVAS_HEIGHT - 80, 220, 30, '', codeValue, this.codeInputActive, {
-            placeholder: 'Enter secret code...',
+        TextInput.drawField(ctx, CANVAS_WIDTH / 2 - 150, CANVAS_HEIGHT - 72, 210, 34, '', codeValue, this.codeInputActive, {
+            placeholder: 'Enter code...',
             font: '14px monospace',
         });
-        UIRenderer.drawButton(ctx, CANVAS_WIDTH / 2 + 70, CANVAS_HEIGHT - 84, 90, 36, 'UNLOCK', this.hoveredButton === 11, {
+        UIRenderer.drawButton(ctx, CANVAS_WIDTH / 2 + 72, CANVAS_HEIGHT - 76, 90, 38, 'UNLOCK', this.hoveredButton === 11, {
             normal: '#1a1a2a', hover: '#2a2a4a', text: '#4488FF', border: '#4488FF',
         });
 
         // Unlock feedback
         if (this.unlockFeedbackTimer > 0) {
             const isSuccess = this.unlockFeedback.startsWith('Unlocked');
-            UIRenderer.drawText(ctx, this.unlockFeedback, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 38, {
+            UIRenderer.drawText(ctx, this.unlockFeedback, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 20, {
                 font: 'bold 13px monospace', color: isSuccess ? '#44FF44' : '#FF4444',
             });
         }
