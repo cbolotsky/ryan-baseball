@@ -14,6 +14,7 @@ function getDefaultOverrides() {
         coaches: { added: [], edited: {}, deleted: [] },
         equipment: { added: { bats: [], gloves: [], helmets: [], cleats: [], accessories: [] }, edited: {}, deleted: [] },
         secretItems: {},
+        secretCoaches: {},
     };
 }
 
@@ -34,6 +35,7 @@ export class AdminDataManager {
                     deleted: data.equipment?.deleted || [],
                 },
                 secretItems: data.secretItems || {},
+                secretCoaches: data.secretCoaches || {},
             };
         } catch (e) {
             return getDefaultOverrides();
@@ -119,6 +121,15 @@ export class AdminDataManager {
                     item.secret = secretInfo.secret;
                     item.unlockCode = secretInfo.unlockCode;
                 }
+            }
+        }
+
+        // --- Secret coaches ---
+        for (const [id, secretInfo] of Object.entries(data.secretCoaches || {})) {
+            const coach = COACHES.find(x => x.id === id);
+            if (coach) {
+                coach.secret = secretInfo.secret;
+                coach.unlockCode = secretInfo.unlockCode;
             }
         }
     }
@@ -246,6 +257,22 @@ export class AdminDataManager {
         }
     }
 
+    static setCoachSecret(id, isSecret, unlockCode) {
+        const data = AdminDataManager.loadOverrides();
+        if (isSecret) {
+            data.secretCoaches[id] = { secret: true, unlockCode: unlockCode || '' };
+        } else {
+            delete data.secretCoaches[id];
+        }
+        AdminDataManager.saveOverrides(data);
+        // Apply to live coach
+        const coach = COACHES.find(x => x.id === id);
+        if (coach) {
+            coach.secret = isSecret;
+            coach.unlockCode = isSecret ? (unlockCode || '') : undefined;
+        }
+    }
+
     // ==================== Secret Unlock System ====================
 
     static tryUnlockCode(code) {
@@ -254,12 +281,19 @@ export class AdminDataManager {
         for (const cat of ['bats', 'gloves', 'helmets', 'cleats', 'accessories']) {
             for (const item of (EQUIPMENT_CATALOG[cat] || [])) {
                 if (item.secret && item.unlockCode && item.unlockCode.toUpperCase() === upperCode) {
-                    // Unlock it
                     const unlocked = AdminDataManager.getUnlockedSecrets();
                     unlocked.push(item.id);
                     AdminDataManager._saveUnlockedSecrets(unlocked);
                     return item;
                 }
+            }
+        }
+        for (const coach of COACHES) {
+            if (coach.secret && coach.unlockCode && coach.unlockCode.toUpperCase() === upperCode) {
+                const unlocked = AdminDataManager.getUnlockedSecrets();
+                unlocked.push(coach.id);
+                AdminDataManager._saveUnlockedSecrets(unlocked);
+                return coach;
             }
         }
         return null;
