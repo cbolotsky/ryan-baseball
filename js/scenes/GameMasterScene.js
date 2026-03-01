@@ -134,8 +134,6 @@ export class GameMasterScene {
                         const canvas = this.game.canvas || document.querySelector('canvas');
                         TextInput.activate(canvas, CANVAS_WIDTH / 2 - 200, 168, 400, 32, '');
                     } else if (this.tab === 'roster') {
-                        const canvas = this.game.canvas || document.querySelector('canvas');
-                        TextInput.activate(canvas, 180, 63, 280, 28, '');
                         this._lastSearch = '';
                         this._filtered = this._allPlayers.slice();
                     }
@@ -190,10 +188,10 @@ export class GameMasterScene {
         if (UIRenderer.isPointInRect(mx, my, CANVAS_WIDTH - 180, CANVAS_HEIGHT - 52, 80, 32)) this.hoveredButton = 400; // prev page
 
         const maxScroll = Math.max(0, this._filtered.length - maxVis);
-        if (this.game.input.isKeyJustPressed('ArrowDown') && !TextInput.isFocused()) {
+        if (this.game.input.isKeyJustPressed('ArrowDown')) {
             this.rosterScroll = Math.min(maxScroll, this.rosterScroll + 1);
         }
-        if (this.game.input.isKeyJustPressed('ArrowUp') && !TextInput.isFocused()) {
+        if (this.game.input.isKeyJustPressed('ArrowUp')) {
             this.rosterScroll = Math.max(0, this.rosterScroll - 1);
         }
     }
