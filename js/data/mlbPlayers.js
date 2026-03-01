@@ -71,7 +71,7 @@ export const LIGHTNING_PLAYERS = [
     { id: 'denora', name: 'Michael Denora', number: 24, position: 'CF', stars: 3, power: 62, contact: 74, speed: 80, fielding: 80, arm: 75, skinTone: 'light', teamSource: 'Old Bridge Lightning' },
     { id: 'ikola', name: 'Ryan Ikola', number: 99, position: '2B', stars: 3, power: 60, contact: 72, speed: 70, fielding: 78, arm: 72, skinTone: 'light', teamSource: 'Old Bridge Lightning' },
     { id: 'christian', name: 'Zeik Christian', number: 37, position: 'UTIL', stars: 3, power: 68, contact: 70, speed: 72, fielding: 74, arm: 76, skinTone: 'light', teamSource: 'Old Bridge Lightning' },
-    { id: 'vargas', name: 'Nico Vargas', number: 23, position: 'SP', stars: 3, power: 42, contact: 38, speed: 55, fielding: 58, arm: 78, pitchSpeed: 86, pitchControl: 80, pitchBreak: 74, skinTone: 'medium', teamSource: 'Old Bridge Lightning' },
+    { id: 'vargas', name: 'Nico Vargas', number: 23, position: 'SP', stars: 5, power: 100, contact: 100, speed: 100, fielding: 100, arm: 100, pitchSpeed: 100, pitchControl: 100, pitchBreak: 100, skinTone: 'medium', teamSource: 'Old Bridge Lightning' },
 ];
 
 // Other local players
