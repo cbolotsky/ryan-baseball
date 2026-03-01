@@ -1,4 +1,6 @@
 import { MLB_PLAYERS, RYAN_SILBER, LIGHTNING_PLAYERS, LOCAL_PLAYERS } from '../data/mlbPlayers.js';
+
+const NICO_VARGAS = LIGHTNING_PLAYERS.find(p => p.id === 'vargas');
 import { shuffle } from '../utils/math.js';
 
 export class DraftManager {
@@ -21,8 +23,8 @@ export class DraftManager {
         // Add all MLB players
         const mlb = MLB_PLAYERS.map(p => ({ ...p, source: 'MLB' }));
 
-        // Add Lightning teammates
-        const lightning = LIGHTNING_PLAYERS.map(p => ({ ...p, source: 'Lightning' }));
+        // Add Lightning teammates (excluding Nico Vargas who is always on the team)
+        const lightning = LIGHTNING_PLAYERS.filter(p => p.id !== 'vargas').map(p => ({ ...p, source: 'Lightning' }));
 
         // Add local players
         const local = LOCAL_PLAYERS.map(p => ({ ...p, source: 'Local' }));
@@ -85,9 +87,9 @@ export class DraftManager {
         return this.getNextOptions();
     }
 
-    // Get all drafted players + Ryan Silber
+    // Get all drafted players + Ryan Silber + Nico Vargas
     getFinalRoster() {
-        return [RYAN_SILBER, ...this.drafted];
+        return [RYAN_SILBER, NICO_VARGAS, ...this.drafted];
     }
 
     getRoundLabel() {
