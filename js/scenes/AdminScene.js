@@ -109,9 +109,9 @@ export class AdminScene {
         this._wheelHandler = (e) => {
             e.preventDefault();
             if (this.subView === 'mlbPick') {
-                this.mlbScrollOffset = Math.max(0, this.mlbScrollOffset + (e.deltaY > 0 ? 3 : -3));
+                this.mlbScrollOffset = Math.max(0, this.mlbScrollOffset + (e.deltaY > 0 ? 1 : -1));
             } else {
-                this.scrollOffset = Math.max(0, this.scrollOffset + (e.deltaY > 0 ? 3 : -3));
+                this.scrollOffset = Math.max(0, this.scrollOffset + (e.deltaY > 0 ? 1 : -1));
             }
         };
         const canvas = this.game.canvas || document.querySelector('canvas');
