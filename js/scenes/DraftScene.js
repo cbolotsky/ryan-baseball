@@ -420,7 +420,7 @@ export class DraftScene {
 
         // Already drafted count
         const drafted = this.draftManager.drafted;
-        UIRenderer.drawText(ctx, `Roster: ${drafted.length + 1}/9 (Ryan Silber + ${drafted.length} drafted)`, CANVAS_WIDTH / 2, 90, {
+        UIRenderer.drawText(ctx, `Roster: ${drafted.length + 2}/10 (Ryan Silber + Nico Vargas + ${drafted.length} drafted)`, CANVAS_WIDTH / 2, 90, {
             font: '14px monospace', color: '#AAA',
         });
 
@@ -570,16 +570,18 @@ export class DraftScene {
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
 
-        // Ryan is always first
+        // Ryan and Nico are always first
         ctx.fillStyle = '#FFD700';
         ctx.fillText('Ryan Silber (C)', x + 10, y + 15);
+        ctx.fillStyle = '#FFD700';
+        ctx.fillText('Nico Vargas (SP)', x + 10 + 140, y + 15);
 
         // Drafted players
         const drafted = this.draftManager.drafted;
         for (let i = 0; i < drafted.length; i++) {
             const p = drafted[i];
             ctx.fillStyle = STAR_COLORS[p.stars] || '#AAA';
-            const px = x + 10 + (i + 1) * 140;
+            const px = x + 10 + (i + 2) * 140;
             const py = px > CANVAS_WIDTH - 160 ? y + 35 : y + 15;
             const actualX = px > CANVAS_WIDTH - 160 ? px - (CANVAS_WIDTH - 160) + 10 : px;
             ctx.fillText(`${p.name} (${p.position})`, actualX, py);
