@@ -14,6 +14,8 @@ import { SeasonSetupScene } from './scenes/SeasonSetupScene.js';
 import { LeaderboardScene } from './scenes/LeaderboardScene.js';
 import { LeaderboardManager } from './systems/LeaderboardManager.js';
 import { GameMasterSync } from './systems/GameMasterSync.js';
+import { GameMasterControl } from './systems/GameMasterControl.js';
+import { GameMasterScene } from './scenes/GameMasterScene.js';
 import { FIREBASE_CONFIG } from './config/firebase.js';
 
 // Resolve lazy cross-references between scenes (avoids circular imports)
@@ -37,6 +39,8 @@ TitleScene._DraftScene = DraftScene;
 TitleScene._SeasonScene = SeasonScene;
 TitleScene._AdminScene = AdminScene;
 TitleScene._LeaderboardScene = LeaderboardScene;
+TitleScene._GameMasterScene = GameMasterScene;
+GameMasterScene._TitleScene = TitleScene;
 LeaderboardScene._TitleScene = TitleScene;
 AdminScene._TitleScene = TitleScene;
 
@@ -55,6 +59,10 @@ LeaderboardManager.init(FIREBASE_CONFIG);
 
 // Start the game
 const game = new Game('gameCanvas');
+
+// Initialize live game-control listener (applies GM commands to this client)
+GameMasterControl.init(FIREBASE_CONFIG, game);
+
 game.start(new TitleScene(game));
 
 // Expose for debugging
