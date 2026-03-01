@@ -57,7 +57,7 @@ export class PitchEngine {
         const pitchSpeed = pitchType.baseSpeed * speedMult;
 
         // Duration to reach plate (faster pitch = shorter duration)
-        const duration = 0.55 + (100 - pitchSpeed) * 0.008;
+        const duration = 0.85 + (100 - pitchSpeed) * 0.012;
 
         return {
             start,
