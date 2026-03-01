@@ -106,7 +106,7 @@ export class TitleScene {
                     if (AdminScene) {
                         this.game.sceneManager.transitionTo(new AdminScene(this.game));
                     }
-                } else if (pw === 'Control6') {
+                } else if (pw === 'lightning') {
                     TextInput.deactivate();
                     this.showLoginModal = false;
                     const GMScene = TitleScene._GameMasterScene;
@@ -139,7 +139,7 @@ export class TitleScene {
                 if (AdminScene) {
                     this.game.sceneManager.transitionTo(new AdminScene(this.game));
                 }
-            } else if (pw === 'Control6') {
+            } else if (pw === 'lightning') {
                 TextInput.deactivate();
                 this.showLoginModal = false;
                 const GMScene = TitleScene._GameMasterScene;
