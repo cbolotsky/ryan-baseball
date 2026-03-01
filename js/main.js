@@ -13,6 +13,7 @@ import { AdminDataManager } from './systems/AdminDataManager.js';
 import { SeasonSetupScene } from './scenes/SeasonSetupScene.js';
 import { LeaderboardScene } from './scenes/LeaderboardScene.js';
 import { LeaderboardManager } from './systems/LeaderboardManager.js';
+import { GameMasterSync } from './systems/GameMasterSync.js';
 import { FIREBASE_CONFIG } from './config/firebase.js';
 
 // Resolve lazy cross-references between scenes (avoids circular imports)
@@ -39,8 +40,15 @@ TitleScene._LeaderboardScene = LeaderboardScene;
 LeaderboardScene._TitleScene = TitleScene;
 AdminScene._TitleScene = TitleScene;
 
-// Apply admin overrides before game starts
+// Fetch game-master overrides from Firebase into localStorage, then apply.
+// Top-level await is valid in ES modules. Resolves within 3 s even if offline.
+await GameMasterSync.init(FIREBASE_CONFIG);
+
+// Apply admin overrides (now includes any Firebase-synced game-master data)
 AdminDataManager.applyOverrides();
+
+// Wire admin saves → Firebase so every computer gets the update in real time
+AdminDataManager._onSave = (data) => GameMasterSync.push(data);
 
 // Initialize Firebase leaderboard (gracefully fails if config not set)
 LeaderboardManager.init(FIREBASE_CONFIG);

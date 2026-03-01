@@ -19,6 +19,12 @@ function getDefaultOverrides() {
 }
 
 export class AdminDataManager {
+    /**
+     * Optional callback set by main.js to push saves to Firebase.
+     * Signature: (overridesData: Object) => void
+     */
+    static _onSave = null;
+
     static loadOverrides() {
         try {
             const raw = localStorage.getItem(ADMIN_KEY);
@@ -45,6 +51,8 @@ export class AdminDataManager {
     static saveOverrides(data) {
         try {
             localStorage.setItem(ADMIN_KEY, JSON.stringify(data));
+            // Push to Firebase so all computers receive this change
+            if (AdminDataManager._onSave) AdminDataManager._onSave(data);
             return true;
         } catch (e) {
             return false;
