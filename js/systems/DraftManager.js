@@ -1,7 +1,7 @@
 import { MLB_PLAYERS, RYAN_SILBER, LIGHTNING_PLAYERS, LOCAL_PLAYERS } from '../data/mlbPlayers.js';
+import { shuffle } from '../utils/math.js';
 
 const NICO_VARGAS = LIGHTNING_PLAYERS.find(p => p.id === 'vargas');
-import { shuffle } from '../utils/math.js';
 
 export class DraftManager {
     constructor() {
