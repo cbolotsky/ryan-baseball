@@ -226,7 +226,7 @@ export class AdminScene {
 
         for (let i = 0; i < fields.length; i++) {
             const field = fields[i];
-            const fieldY = fy + i * 38;
+            const fieldY = fy + i * 34;
             if (fieldY > CANVAS_HEIGHT - 120) break;
             const fieldX = formX + 100;
             const fieldW = FORM_WIDTH - 120;
@@ -270,7 +270,7 @@ export class AdminScene {
                         // Text/number field - activate TextInput
                         this.activeFieldIndex = i;
                         const canvas = this.game.canvas || document.querySelector('canvas');
-                        const fieldY = LIST_TOP + 10 + i * 38;
+                        const fieldY = LIST_TOP + 10 + i * 34;
                         TextInput.activate(canvas, FORM_LEFT + 100, fieldY, FORM_WIDTH - 120, 26, String(this.formData[field.key] || ''));
                     }
                 }
@@ -312,7 +312,7 @@ export class AdminScene {
                 if (next < fields.length) {
                     this.activeFieldIndex = next;
                     const canvas = this.game.canvas || document.querySelector('canvas');
-                    const fieldY = LIST_TOP + 10 + next * 38;
+                    const fieldY = LIST_TOP + 10 + next * 34;
                     TextInput.activate(canvas, FORM_LEFT + 100, fieldY, FORM_WIDTH - 120, 26, String(this.formData[fields[next].key] || ''));
                 }
             }
@@ -909,7 +909,7 @@ export class AdminScene {
         // Fields
         for (let i = 0; i < this.formFields.length; i++) {
             const field = this.formFields[i];
-            const fieldY = LIST_TOP + 10 + i * 38;
+            const fieldY = LIST_TOP + 10 + i * 34;
             if (fieldY > CANVAS_HEIGHT - 130) break;
             const fieldX = FORM_LEFT + 100;
             const fieldW = FORM_WIDTH - 120;
