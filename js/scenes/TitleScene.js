@@ -106,6 +106,13 @@ export class TitleScene {
                     if (AdminScene) {
                         this.game.sceneManager.transitionTo(new AdminScene(this.game));
                     }
+                } else if (pw === 'lightning') {
+                    TextInput.deactivate();
+                    this.showLoginModal = false;
+                    const GMScene = TitleScene._GameMasterScene;
+                    if (GMScene) {
+                        this.game.sceneManager.transitionTo(new GMScene(this.game));
+                    }
                 } else {
                     this.loginError = 'INVALID CODE';
                     this.loginErrorTimer = 2;
@@ -131,6 +138,13 @@ export class TitleScene {
                 const AdminScene = TitleScene._AdminScene;
                 if (AdminScene) {
                     this.game.sceneManager.transitionTo(new AdminScene(this.game));
+                }
+            } else if (pw === 'lightning') {
+                TextInput.deactivate();
+                this.showLoginModal = false;
+                const GMScene = TitleScene._GameMasterScene;
+                if (GMScene) {
+                    this.game.sceneManager.transitionTo(new GMScene(this.game));
                 }
             } else {
                 this.loginError = 'INVALID CODE';
@@ -317,3 +331,4 @@ TitleScene._DraftScene = null;
 TitleScene._SeasonScene = null;
 TitleScene._AdminScene = null;
 TitleScene._LeaderboardScene = null;
+TitleScene._GameMasterScene = null;
