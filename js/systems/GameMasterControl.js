@@ -61,6 +61,15 @@ export class GameMasterControl {
     }
 
     /**
+     * Apply a command only to this local game instance (no Firebase broadcast).
+     * @param {string} type
+     * @param {Object} payload
+     */
+    static applyLocally(type, payload = {}) {
+        GameMasterControl._apply({ type, payload });
+    }
+
+    /**
      * Broadcast a command to all connected browsers.
      * Called by GameMasterScene; the sending session will NOT apply it locally
      * (the GM is not running a player game).
