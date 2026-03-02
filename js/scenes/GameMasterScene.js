@@ -53,6 +53,9 @@ export class GameMasterScene {
         this.feedbackMsg   = '';
         this.feedbackTimer = 0;
 
+        // Whether commands apply only to this screen or broadcast to all
+        this.localOnly = false;
+
         // GAME tab
         this.moneyStepIdx  = 2;          // default $250
         this.boostIdx      = 1;          // default +20%
@@ -87,6 +90,9 @@ export class GameMasterScene {
         // Back button
         if (UIRenderer.isPointInRect(mx, my, 10, 10, 80, 34)) this.hoveredButton = 99;
 
+        // Local/Broadcast toggle
+        if (UIRenderer.isPointInRect(mx, my, CANVAS_WIDTH - 175, 10, 165, 34)) this.hoveredButton = 500;
+
         // Tab buttons
         for (let i = 0; i < TABS.length; i++) {
             if (UIRenderer.isPointInRect(mx, my, 110 + i * 140, 10, 130, 34)) {
@@ -114,6 +120,12 @@ export class GameMasterScene {
         else if (this.tab === 'announce') this._updateAnnounceTab(mx, my);
 
         if (this.game.input.isMouseJustPressed()) {
+            // Local/Broadcast toggle
+            if (this.hoveredButton === 500) {
+                Audio.uiClick();
+                this.localOnly = !this.localOnly;
+                return;
+            }
             // Back
             if (this.hoveredButton === 99) {
                 Audio.uiClick();
@@ -241,36 +253,61 @@ export class GameMasterScene {
 
     async _doWinGame() {
         Audio.uiClick();
-        await GameMasterControl.broadcast('WIN_GAME', {});
-        this._feedback('WIN GAME broadcast to all computers!');
+        if (this.localOnly) {
+            GameMasterControl.applyLocally('WIN_GAME', {});
+            this._feedback('WIN GAME applied to your screen only!');
+        } else {
+            await GameMasterControl.broadcast('WIN_GAME', {});
+            this._feedback('WIN GAME broadcast to all computers!');
+        }
     }
 
     async _doGiveMoney() {
         Audio.uiClick();
         const amount = MONEY_STEPS[this.moneyStepIdx];
-        await GameMasterControl.broadcast('GIVE_MONEY', { amount });
-        this._feedback(`$${amount} gift sent to all players!`);
+        if (this.localOnly) {
+            GameMasterControl.applyLocally('GIVE_MONEY', { amount });
+            this._feedback(`$${amount} added to your wallet only!`);
+        } else {
+            await GameMasterControl.broadcast('GIVE_MONEY', { amount });
+            this._feedback(`$${amount} gift sent to all players!`);
+        }
     }
 
     async _doBoostTeam() {
         Audio.uiClick();
         const opt = BOOST_OPTIONS[this.boostIdx];
-        await GameMasterControl.broadcast('BOOST_TEAM', { factor: opt.factor });
-        this._feedback(`${opt.label} stat boost sent to all teams!`);
+        if (this.localOnly) {
+            GameMasterControl.applyLocally('BOOST_TEAM', { factor: opt.factor });
+            this._feedback(`${opt.label} stat boost applied to your team only!`);
+        } else {
+            await GameMasterControl.broadcast('BOOST_TEAM', { factor: opt.factor });
+            this._feedback(`${opt.label} stat boost sent to all teams!`);
+        }
     }
 
     async _doAddPlayer(pData) {
         Audio.uiClick();
-        await GameMasterControl.broadcast('ADD_PLAYER', { playerId: pData.id });
-        this._feedback(`${pData.name} added to EVERY team!`);
+        if (this.localOnly) {
+            GameMasterControl.applyLocally('ADD_PLAYER', { playerId: pData.id });
+            this._feedback(`${pData.name} added to your team only!`);
+        } else {
+            await GameMasterControl.broadcast('ADD_PLAYER', { playerId: pData.id });
+            this._feedback(`${pData.name} added to EVERY team!`);
+        }
     }
 
     async _doAnnounce() {
         const text = TextInput.isFocused() ? TextInput.getValue() : '';
         if (!text.trim()) return;
         Audio.uiClick();
-        await GameMasterControl.broadcast('MESSAGE', { text: text.trim() });
-        this._feedback('Message broadcast to all screens!');
+        if (this.localOnly) {
+            GameMasterControl.applyLocally('MESSAGE', { text: text.trim() });
+            this._feedback('Message shown on your screen only!');
+        } else {
+            await GameMasterControl.broadcast('MESSAGE', { text: text.trim() });
+            this._feedback('Message broadcast to all screens!');
+        }
         TextInput.setValue('');
     }
 
@@ -307,11 +344,21 @@ export class GameMasterScene {
 
         // Online indicator
         const online = GameMasterControl.isAvailable;
-        UIRenderer.drawText(ctx, online ? '\u25CF ONLINE' : '\u25CF OFFLINE', CANVAS_WIDTH - 15, 32, {
-            font: '11px monospace',
+        UIRenderer.drawText(ctx, online ? '\u25CF ONLINE' : '\u25CF OFFLINE', CANVAS_WIDTH - 15, 48, {
+            font: '10px monospace',
             color: online ? '#44FF44' : '#FF4444',
             align: 'right',
         });
+
+        // Local / Broadcast toggle
+        UIRenderer.drawButton(ctx, CANVAS_WIDTH - 175, 10, 165, 34,
+            this.localOnly ? '\u{1F4BB} MY SCREEN' : '\u{1F4E1} ALL SCREENS',
+            this.hoveredButton === 500, {
+                normal: this.localOnly ? '#001a30' : '#200020',
+                hover:  this.localOnly ? '#002a50' : '#300030',
+                text:   this.localOnly ? '#44AAFF' : '#FF88FF',
+                border: this.localOnly ? '#2266AA' : '#882288',
+            });
 
         // Tabs
         for (let i = 0; i < TABS.length; i++) {
@@ -454,7 +501,7 @@ export class GameMasterScene {
                 font: '12px monospace', color: '#FFD700', align: 'left',
             });
 
-            UIRenderer.drawButton(ctx, CANVAS_WIDTH - 200, y + 4, 80, 28, 'ADD ALL', btnH, {
+            UIRenderer.drawButton(ctx, CANVAS_WIDTH - 200, y + 4, 80, 28, this.localOnly ? 'ADD MINE' : 'ADD ALL', btnH, {
                 normal: '#0a2000', hover: '#1a4000', text: '#44FF44', border: '#224422',
             });
         }
