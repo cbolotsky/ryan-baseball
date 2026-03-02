@@ -8,6 +8,7 @@
  * Tabs:
  *   GAME    — Win next game, Give money, Boost all team stats
  *   ROSTER  — Browse the player database and add someone to every team
+ *   SECRETS — Mark equipment items as secret and assign unlock codes
  *   ANNOUNCE — Send a text banner to all screens
  */
 
@@ -16,10 +17,12 @@ import { UIRenderer } from '../rendering/UIRenderer.js';
 import { Audio } from '../engine/Audio.js';
 import { TextInput } from '../utils/TextInput.js';
 import { GameMasterControl } from '../systems/GameMasterControl.js';
+import { AdminDataManager } from '../systems/AdminDataManager.js';
 import { MLB_PLAYERS, LIGHTNING_PLAYERS, LOCAL_PLAYERS } from '../data/mlbPlayers.js';
+import { EQUIPMENT_CATALOG } from '../data/equipment.js';
 
-const TABS = ['game', 'roster', 'announce'];
-const TAB_LABELS = { game: 'GAME', roster: 'ROSTER', announce: 'ANNOUNCE' };
+const TABS = ['game', 'roster', 'secrets', 'announce'];
+const TAB_LABELS = { game: 'GAME', roster: 'ROSTER', secrets: 'SECRETS', announce: 'ANNOUNCE' };
 
 // Colors matching the "red/dark" GM theme
 const THEME = {
@@ -42,6 +45,9 @@ const BOOST_OPTIONS = [
     { label: '+50%', factor: 1.50 },
     { label: 'MAX',  factor: 99   },
 ];
+
+const SECRET_CATS = ['bats', 'gloves', 'helmets', 'cleats', 'accessories'];
+const SECRET_CAT_LABELS = ['BATS', 'GLOVES', 'HELMETS', 'CLEATS', 'ACCESSORIES'];
 
 export class GameMasterScene {
     constructor(game) {
@@ -67,6 +73,12 @@ export class GameMasterScene {
         this._allPlayers   = [...MLB_PLAYERS, ...LIGHTNING_PLAYERS, ...LOCAL_PLAYERS];
         this._filtered     = this._allPlayers.slice();
         this._lastSearch   = '';
+
+        // SECRETS tab
+        this.secretsCat       = 'bats';
+        this.secretsScroll    = 0;
+        this.selectedSecretId = null;
+        this.secretCodeActive = false;
     }
 
     onEnter() {}
@@ -95,7 +107,7 @@ export class GameMasterScene {
 
         // Tab buttons
         for (let i = 0; i < TABS.length; i++) {
-            if (UIRenderer.isPointInRect(mx, my, 110 + i * 140, 10, 130, 34)) {
+            if (UIRenderer.isPointInRect(mx, my, 110 + i * 120, 10, 110, 34)) {
                 this.hoveredButton = 200 + i;
             }
         }
@@ -115,8 +127,9 @@ export class GameMasterScene {
             }
         }
 
-        if (this.tab === 'game')     this._updateGameTab(mx, my);
+        if (this.tab === 'game')          this._updateGameTab(mx, my);
         else if (this.tab === 'roster')   this._updateRosterTab(mx, my);
+        else if (this.tab === 'secrets')  this._updateSecretsTab(mx, my);
         else if (this.tab === 'announce') this._updateAnnounceTab(mx, my);
 
         if (this.game.input.isMouseJustPressed()) {
@@ -148,6 +161,10 @@ export class GameMasterScene {
                     } else if (this.tab === 'roster') {
                         this._lastSearch = '';
                         this._filtered = this._allPlayers.slice();
+                    } else if (this.tab === 'secrets') {
+                        this.selectedSecretId = null;
+                        this.secretsScroll    = 0;
+                        this.secretCodeActive = false;
                     }
                     return;
                 }
@@ -208,6 +225,47 @@ export class GameMasterScene {
         }
     }
 
+    _updateSecretsTab(mx, my) {
+        // Category buttons (IDs 600–604)
+        for (let i = 0; i < SECRET_CATS.length; i++) {
+            if (UIRenderer.isPointInRect(mx, my, 25 + i * 152, 63, 142, 30)) {
+                this.hoveredButton = 600 + i;
+            }
+        }
+
+        // Item rows (IDs 700–799)
+        const items  = EQUIPMENT_CATALOG[this.secretsCat] || [];
+        const rowH   = 36;
+        const startY = 108;
+        const maxVis = Math.floor((CANVAS_HEIGHT - startY - 120) / rowH);
+        for (let i = 0; i < maxVis && (i + this.secretsScroll) < items.length; i++) {
+            const y = startY + i * rowH;
+            if (UIRenderer.isPointInRect(mx, my, 50, y, CANVAS_WIDTH - 100, rowH - 2)) {
+                this.hoveredButton = 700 + i;
+            }
+        }
+
+        // Code input field (ID 802), SET SECRET (800), CLEAR (801)
+        const cx = CANVAS_WIDTH / 2;
+        if (UIRenderer.isPointInRect(mx, my, cx - 200, CANVAS_HEIGHT - 78, 260, 32)) this.hoveredButton = 802;
+        if (UIRenderer.isPointInRect(mx, my, cx + 70,  CANVAS_HEIGHT - 82, 130, 36)) this.hoveredButton = 800;
+        if (UIRenderer.isPointInRect(mx, my, cx + 210, CANVAS_HEIGHT - 82, 80,  36)) this.hoveredButton = 801;
+
+        // Enter key submits the secret
+        if (this.secretCodeActive && this.game.input.isKeyJustPressed &&
+                this.game.input.isKeyJustPressed('Enter')) {
+            this._doSetSecret();
+        }
+
+        const maxScroll = Math.max(0, items.length - maxVis);
+        if (this.game.input.isKeyJustPressed('ArrowDown')) {
+            this.secretsScroll = Math.min(maxScroll, this.secretsScroll + 1);
+        }
+        if (this.game.input.isKeyJustPressed('ArrowUp')) {
+            this.secretsScroll = Math.max(0, this.secretsScroll - 1);
+        }
+    }
+
     _updateAnnounceTab(mx, my) {
         // Message field click
         if (UIRenderer.isPointInRect(mx, my, CANVAS_WIDTH / 2 - 200, 168, 400, 32)) {
@@ -242,6 +300,63 @@ export class GameMasterScene {
                 const maxVis = Math.floor((CANVAS_HEIGHT - startY - 60) / rowH);
                 const maxScroll = Math.max(0, this._filtered.length - maxVis);
                 this.rosterScroll = Math.min(maxScroll, this.rosterScroll + maxVis);
+            }
+
+        } else if (this.tab === 'secrets') {
+            // Category buttons
+            for (let i = 0; i < SECRET_CATS.length; i++) {
+                if (this.hoveredButton === 600 + i) {
+                    Audio.uiClick();
+                    this.secretsCat       = SECRET_CATS[i];
+                    this.secretsScroll    = 0;
+                    this.selectedSecretId = null;
+                    this.secretCodeActive = false;
+                    TextInput.deactivate();
+                    return;
+                }
+            }
+
+            // Item row click — select item
+            const items  = EQUIPMENT_CATALOG[this.secretsCat] || [];
+            const rowH   = 36;
+            const startY = 108;
+            const maxVis = Math.floor((CANVAS_HEIGHT - startY - 120) / rowH);
+            for (let i = 0; i < maxVis && (i + this.secretsScroll) < items.length; i++) {
+                if (this.hoveredButton === 700 + i) {
+                    Audio.uiClick();
+                    this.selectedSecretId = items[i + this.secretsScroll].id;
+                    this.secretCodeActive = false;
+                    TextInput.deactivate();
+                    return;
+                }
+            }
+
+            // Code input field
+            if (this.hoveredButton === 802 && this.selectedSecretId) {
+                if (!this.secretCodeActive) {
+                    const canvas = this.game.canvas || document.querySelector('canvas');
+                    const sel = (EQUIPMENT_CATALOG[this.secretsCat] || []).find(x => x.id === this.selectedSecretId);
+                    TextInput.activate(canvas, CANVAS_WIDTH / 2 - 200, CANVAS_HEIGHT - 78, 260, 32,
+                        sel?.unlockCode || '', { maxLength: 30 });
+                    this.secretCodeActive = true;
+                }
+                return;
+            }
+
+            // SET SECRET button
+            if (this.hoveredButton === 800 && this.selectedSecretId) {
+                this._doSetSecret();
+                return;
+            }
+
+            // CLEAR button
+            if (this.hoveredButton === 801 && this.selectedSecretId) {
+                Audio.uiClick();
+                AdminDataManager.setItemSecret(this.selectedSecretId, false, '');
+                this._feedback('Secret cleared — item is now public.');
+                TextInput.deactivate();
+                this.secretCodeActive = false;
+                return;
             }
 
         } else if (this.tab === 'announce') {
@@ -311,6 +426,21 @@ export class GameMasterScene {
         TextInput.setValue('');
     }
 
+    _doSetSecret() {
+        if (!this.selectedSecretId) return;
+        const code = (this.secretCodeActive ? TextInput.getValue() : '').trim();
+        if (!code) {
+            this._feedback('Type a code in the field first!');
+            return;
+        }
+        Audio.uiClick();
+        AdminDataManager.setItemSecret(this.selectedSecretId, true, code);
+        const sel = (EQUIPMENT_CATALOG[this.secretsCat] || []).find(x => x.id === this.selectedSecretId);
+        this._feedback(`"${sel?.name}" is now secret. Code: ${code}`);
+        TextInput.deactivate();
+        this.secretCodeActive = false;
+    }
+
     _feedback(msg) {
         this.feedbackMsg   = msg;
         this.feedbackTimer = 3;
@@ -363,7 +493,7 @@ export class GameMasterScene {
         // Tabs
         for (let i = 0; i < TABS.length; i++) {
             const isActive = this.tab === TABS[i];
-            UIRenderer.drawButton(ctx, 110 + i * 140, 10, 130, 34, TAB_LABELS[TABS[i]], this.hoveredButton === 200 + i, {
+            UIRenderer.drawButton(ctx, 110 + i * 120, 10, 110, 34, TAB_LABELS[TABS[i]], this.hoveredButton === 200 + i, {
                 normal: isActive ? '#3a0010' : '#160008',
                 hover:  '#4a1020',
                 text:   isActive ? THEME.accent : THEME.textDim,
@@ -372,8 +502,9 @@ export class GameMasterScene {
         }
 
         // Tab body
-        if (this.tab === 'game')     this._renderGameTab(ctx);
+        if (this.tab === 'game')          this._renderGameTab(ctx);
         else if (this.tab === 'roster')   this._renderRosterTab(ctx);
+        else if (this.tab === 'secrets')  this._renderSecretsTab(ctx);
         else if (this.tab === 'announce') this._renderAnnounceTab(ctx);
 
         // Feedback
@@ -521,6 +652,144 @@ export class GameMasterScene {
                     font: '11px monospace', color: '#554455', align: 'right',
                 }
             );
+        }
+    }
+
+    _renderSecretsTab(ctx) {
+        const cx = CANVAS_WIDTH / 2;
+
+        // ── Category buttons ─────────────────────────────────────────────────
+        for (let i = 0; i < SECRET_CATS.length; i++) {
+            const isActive = this.secretsCat === SECRET_CATS[i];
+            UIRenderer.drawButton(ctx, 25 + i * 152, 63, 142, 30, SECRET_CAT_LABELS[i],
+                this.hoveredButton === 600 + i, {
+                normal: isActive ? '#1a0030' : '#0a0018',
+                hover:  '#2a1040',
+                text:   isActive ? '#CC88FF' : '#553366',
+                border: isActive ? '#8844CC' : '#2a1040',
+            });
+        }
+
+        // ── Column headers ───────────────────────────────────────────────────
+        ctx.save();
+        ctx.font = '11px monospace';
+        ctx.fillStyle = '#553355';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('ITEM NAME', 75,  100);
+        ctx.fillText('RARITY',    440, 100);
+        ctx.fillText('STATUS',    570, 100);
+        ctx.fillText('CODE',      670, 100);
+        ctx.restore();
+
+        // ── Item rows ────────────────────────────────────────────────────────
+        const items  = EQUIPMENT_CATALOG[this.secretsCat] || [];
+        const rowH   = 36;
+        const startY = 108;
+        const maxVis = Math.floor((CANVAS_HEIGHT - startY - 120) / rowH);
+
+        for (let i = 0; i < maxVis && (i + this.secretsScroll) < items.length; i++) {
+            const item      = items[i + this.secretsScroll];
+            const y         = startY + i * rowH;
+            const isSelected = item.id === this.selectedSecretId;
+            const isH        = this.hoveredButton === 700 + i;
+            const rowCy      = y + rowH / 2 - 1;
+
+            ctx.save();
+            ctx.fillStyle = isSelected ? 'rgba(80,0,100,0.45)' :
+                            isH        ? 'rgba(50,0,70,0.3)'   :
+                            i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
+            ctx.strokeStyle = isSelected ? '#9955DD' : isH ? '#441155' : '#1a001a';
+            ctx.lineWidth = 1;
+            ctx.fillRect(50, y, CANVAS_WIDTH - 100, rowH - 2);
+            ctx.strokeRect(50, y, CANVAS_WIDTH - 100, rowH - 2);
+            ctx.restore();
+
+            ctx.save();
+            ctx.font = '13px monospace';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+
+            ctx.fillStyle = isSelected ? '#FFCCFF' : '#CCAACC';
+            ctx.fillText(item.name || '', 75, rowCy);
+
+            ctx.fillStyle = '#664466';
+            ctx.fillText((item.rarity || '').toUpperCase(), 440, rowCy);
+
+            if (item.secret) {
+                ctx.fillStyle = '#FF5555';
+                ctx.fillText('SECRET', 570, rowCy);
+                ctx.fillStyle = '#FF9999';
+                ctx.fillText(item.unlockCode || '', 670, rowCy);
+            } else {
+                ctx.fillStyle = '#332233';
+                ctx.fillText('public', 570, rowCy);
+            }
+            ctx.restore();
+        }
+
+        // Scroll counter
+        if (items.length > maxVis) {
+            UIRenderer.drawText(ctx,
+                `${this.secretsScroll + 1}–${Math.min(this.secretsScroll + maxVis, items.length)} / ${items.length}`,
+                CANVAS_WIDTH - 55, startY + maxVis * rowH + 8, {
+                    font: '11px monospace', color: '#443344', align: 'right',
+                });
+        }
+
+        // ── Bottom panel — code entry ────────────────────────────────────────
+        const panelY = CANVAS_HEIGHT - 112;
+        UIRenderer.drawPanel(ctx, 30, panelY, CANVAS_WIDTH - 60, 102, {
+            bgColor: 'rgba(12,0,20,0.92)', borderColor: '#440055', borderWidth: 1,
+        });
+
+        const selItem = this.selectedSecretId
+            ? (EQUIPMENT_CATALOG[this.secretsCat] || []).find(x => x.id === this.selectedSecretId)
+            : null;
+
+        if (!selItem) {
+            UIRenderer.drawText(ctx, 'Click an item above to set or clear its secret code', cx, panelY + 52, {
+                font: '13px monospace', color: '#443344',
+            });
+        } else {
+            // Selected item name
+            UIRenderer.drawText(ctx, `Selected: ${selItem.name}`, cx, panelY + 18, {
+                font: 'bold 13px monospace', color: '#CC88FF',
+            });
+
+            // Code field label
+            UIRenderer.drawText(ctx, 'CODE:', cx - 228, panelY + 56, {
+                font: '12px monospace', color: '#664466', align: 'left',
+            });
+
+            // Code text field
+            const codeVal = this.secretCodeActive
+                ? TextInput.getValue()
+                : (selItem.unlockCode || '');
+            TextInput.drawField(ctx, cx - 200, panelY + 40, 260, 32, '', codeVal, this.secretCodeActive, {
+                placeholder: 'Type unlock code here...',
+                font: '14px monospace',
+            });
+
+            // SET SECRET / UPDATE CODE button
+            UIRenderer.drawButton(ctx, cx + 70, panelY + 36, 130, 36,
+                selItem.secret ? 'UPDATE CODE' : 'SET SECRET',
+                this.hoveredButton === 800, {
+                normal: '#1a0030', hover: '#2a0050', text: '#CC88FF', border: '#8844CC',
+            });
+
+            // CLEAR button (only when already secret)
+            if (selItem.secret) {
+                UIRenderer.drawButton(ctx, cx + 210, panelY + 36, 80, 36, 'CLEAR',
+                    this.hoveredButton === 801, {
+                    normal: '#300010', hover: '#500010', text: '#FF5555', border: '#882222',
+                });
+            }
+
+            // Hint
+            UIRenderer.drawText(ctx, 'Players enter codes in the Shop or Draft screen', cx, panelY + 92, {
+                font: '11px monospace', color: '#331133',
+            });
         }
     }
 
