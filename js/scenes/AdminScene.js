@@ -45,8 +45,6 @@ const COACH_FIELDS = [
     { key: 'bonus_pitchSpeed', label: '+PitchSpd', type: 'number', min: 0, max: 20 },
     { key: 'bonus_pitchControl', label: '+PitchCtl', type: 'number', min: 0, max: 20 },
     { key: 'bonus_pitchBreak', label: '+PitchBrk', type: 'number', min: 0, max: 20 },
-    { key: 'secret', label: 'Secret?', type: 'toggle' },
-    { key: 'unlockCode', label: 'Unlock Code', type: 'text' },
 ];
 
 const EQUIP_FIELDS = [
@@ -853,10 +851,6 @@ export class AdminScene {
                 ctx.fillStyle = '#44FF44';
                 const bonusStr = Object.entries(item.bonuses || {}).map(([k, v]) => `+${v}${k.substring(0, 3)}`).join(' ');
                 ctx.fillText(bonusStr, LIST_LEFT + 450, cy);
-                if (listW > 600) {
-                    ctx.fillStyle = item.secret ? '#FF4444' : '#333';
-                    ctx.fillText(item.secret ? 'SECRET' : '--', LIST_LEFT + 650, cy);
-                }
             } else {
                 ctx.fillStyle = RARITY_COLORS[item.rarity] || '#AAA';
                 ctx.fillText(item.name || '', LIST_LEFT + 10, cy);
