@@ -2,6 +2,7 @@ import { Team } from '../entities/Team.js';
 import { Player } from '../entities/Player.js';
 import { Coach } from '../entities/Coach.js';
 import { COACHES } from '../data/coaches.js';
+import { NICO_VARGAS } from '../data/mlbPlayers.js';
 import { SeasonManager } from './SeasonManager.js';
 import { EconomyManager } from './EconomyManager.js';
 import { EQUIPMENT_CATALOG } from '../data/equipment.js';
@@ -103,6 +104,11 @@ export class SaveManager {
                 }
             }
             team.addPlayer(p);
+        }
+
+        // Ensure Nico Vargas is always on the team (inject if missing from older saves)
+        if (!team.roster.some(p => p.id === NICO_VARGAS.id)) {
+            team.addPlayer(new Player(NICO_VARGAS));
         }
 
         // Restore lineup by IDs

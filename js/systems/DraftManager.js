@@ -1,4 +1,4 @@
-import { MLB_PLAYERS, RYAN_SILBER, LIGHTNING_PLAYERS, LOCAL_PLAYERS } from '../data/mlbPlayers.js';
+import { MLB_PLAYERS, RYAN_SILBER, NICO_VARGAS, LIGHTNING_PLAYERS, LOCAL_PLAYERS } from '../data/mlbPlayers.js';
 import { shuffle } from '../utils/math.js';
 
 export class DraftManager {
@@ -85,9 +85,9 @@ export class DraftManager {
         return this.getNextOptions();
     }
 
-    // Get all drafted players + Ryan Silber
+    // Get all drafted players + always-on players
     getFinalRoster() {
-        return [RYAN_SILBER, ...this.drafted];
+        return [RYAN_SILBER, NICO_VARGAS, ...this.drafted];
     }
 
     getRoundLabel() {

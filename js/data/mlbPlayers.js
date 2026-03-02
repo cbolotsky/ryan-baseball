@@ -49,6 +49,14 @@ export const MLB_PLAYERS = [
     { id: 'walls', name: 'Taylor Walls', number: 0, position: 'SS', stars: 1, power: 38, contact: 58, speed: 72, fielding: 82, arm: 78, bats: 'S', throws: 'R', height: 'short', build: 'lean', skinTone: 'light', teamSource: 'Tampa Bay Rays' },
 ];
 
+// Always-on teammate — maxed-out stats, always on every team
+export const NICO_VARGAS = {
+    id: 'nico_vargas', name: 'Nico Vargas', number: 11, position: 'CF', stars: 5,
+    power: 99, contact: 99, speed: 99, fielding: 99, arm: 99,
+    bats: 'R', throws: 'R', height: 'tall', build: 'athletic', skinTone: 'medium',
+    alwaysOnTeam: true, teamSource: 'Old Bridge Lightning',
+};
+
 // Player character — always on the team
 export const RYAN_SILBER = {
     id: 'ryan_silber', name: 'Ryan Silber', number: 6, position: 'C', stars: 3,
